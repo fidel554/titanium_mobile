@@ -1,4 +1,58 @@
-'use strict';
+# requirements.txt: dash plotly pandas requests
+
+import dash
+from dash import dcc, html
+import plotly.graph_objs as go
+import pandas as pd
+import requests
+
+# Replace with your Alpha Vantage API key
+API_KEY = 'YOUR_API_KEY'
+BASE_URL = 'https://www.alphavantage.co/query'
+
+def fetch_fx_data(symbol='EURUSD', interval='60min'):
+    params = {
+        'function': 'FX_INTRADAY',
+        'from_symbol': symbol[:3],
+        'to_symbol': symbol[3:],
+        'interval': interval,
+        'apikey': API_KEY,
+        'outputsize': 'compact'
+    }
+    r = requests.get(BASE_URL, params=params)
+    data = r.json()
+    key = f'Time Series FX ({interval})'
+    df = pd.DataFrame.from_dict(data[key], orient='index')
+    df = df.astype(float)
+    df.index = pd.to_datetime(df.index)
+    df.sort_index(inplace=True)
+    return df
+
+df = fetch_fx_data()
+
+app = dash.Dash(__name__)
+app.layout = html.Div([
+    html.H1('Forex Chart Analyzer'),
+    dcc.Graph(
+        id='forex-chart',
+        figure={
+            'data': [
+                go.Candlestick(
+                    x=df.index,
+                    open=df['1. open'],
+                    high=df['2. high'],
+                    low=df['3. low'],
+                    close=df['4. close'],
+                    name='EUR/USD'
+                )
+            ],
+            'layout': go.Layout(title='EUR/USD Forex Chart')
+        }
+    )
+])
+
+if __name__ == '__main__':
+    app.run_server(debug=True)'use strict';
 
 const path = require('path');
 const fs = require('fs-extra');
